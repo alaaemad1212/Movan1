@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: registrations
+    // Document ID: auto-generated
+    // Fields:
+    //   - fullName: string (required, 2-100 chars)
+    //   - phone: string (required, 5-20 chars)
+    //   - city: string (required, 2-50 chars)
+    //   - interestType: string (required, enum)
+    //   - notes: string (optional, 0-1000 chars)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidStringLength(field, minLen, maxLen) {
+      return request.resource.data[field] is string &&
+             request.resource.data[field].size() >= minLen &&
+             request.resource.data[field].size() <= maxLen;
+    }
+
+    function isValidOptionalString(field, minLen, maxLen) {
+      return !request.resource.data.keys().hasAll([field]) ||
+             (request.resource.data[field] is string &&
+              request.resource.data[field].size() >= minLen &&
+              request.resource.data[field].size() <= maxLen);
+    }
+
+    function isValidRegistration(data) {
+      return hasOnlyAllowedFields(['fullName', 'phone', 'city', 'interestType', 'notes', 'createdAt']) &&
+             isValidStringLength('fullName', 2, 100) &&
+             isValidStringLength('phone', 5, 20) &&
+             isValidStringLength('city', 2, 50) &&
+             request.resource.data.interestType in [
+               'متدربة / لاعبة',
+               'مدربة رياضية',
+               'أخصائية تغذية',
+               'أخصائية لياقة بدنية',
+               'شريك أو راعي',
+               'أخرى'
+             ] &&
+             isValidOptionalString('notes', 0, 1000) &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isFounder() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "alaaemad.dev12@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'founder')
+        );
+    }
+
+    function canEditDueDiligence() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "alaaemad.dev12@gmail.com" && request.auth.token.email_verified == true) ||
+          (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'founder' &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.founderAccessUntil != null &&
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.founderAccessUntil > request.time
+          )
+        );
+    }
+
+    function isAdmin() {
+      return isFounder() || (isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    match /registrations/{registrationId} {
+      // Anyone can create a registration if it's valid
+      allow create: if isValidRegistration(request.resource.data);
+      
+      // Only the admin or founder can read, update, or delete registrations
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      // Users can read their own document, admins can read all users
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      
+      // Users can create their own document on first login
+      allow create: if isAuthenticated() && request.auth.uid == userId &&
+        (request.resource.data.role == 'pending' ||
+         (request.resource.data.role == 'founder' && request.auth.token.email == 'alaaemad.dev12@gmail.com'));
+         
+      // Only founders can update roles to founder, admins can update to admin/pending
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'founderAccessUntil']) &&
+                    (request.resource.data.role != 'founder' || isFounder());
+      
+      // Admins can delete users (except themselves)
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    match /due_diligence/{docId} {
+      // Only founders can read due diligence
+      allow read: if isFounder();
+      // Only founders with active temporary access or main founder can write
+      allow write: if canEditDueDiligence();
+    }
+  }
+}

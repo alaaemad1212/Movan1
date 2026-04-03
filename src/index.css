@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --color-movanGreen: #2CB688;
+  --color-movanDarkGreen: #24956F;
+  --color-movanNavy: #1E2147;
+  --color-movanLight: #F3F4F6;
+  
+  /* Hex overrides for html2canvas compatibility */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-300: #93c5fd;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-blue-800: #1e40af;
+  --color-blue-900: #1e3a8a;
+
+  --font-sans: "Cairo", sans-serif;
+}
+
+/* Custom styles for Quill Editor to work with Tailwind */
+.ql-editor {
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+
+.ql-editor ul {
+  list-style-type: disc !important;
+  padding-left: 1.5em !important;
+}
+
+.ql-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5em !important;
+}
+
+.ql-editor[dir="rtl"] ul,
+.ql-editor[dir="rtl"] ol {
+  padding-left: 0 !important;
+  padding-right: 1.5em !important;
+}
+
+.ql-editor h1 {
+  font-size: 2em !important;
+  font-weight: bold !important;
+  margin-bottom: 0.5em !important;
+}
+
+.ql-editor h2 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin-bottom: 0.5em !important;
+}
+
+.ql-editor h3 {
+  font-size: 1.17em !important;
+  font-weight: bold !important;
+  margin-bottom: 0.5em !important;
+}
+
+.ql-editor a {
+  color: var(--color-movanGreen) !important;
+  text-decoration: underline !important;
+}
+
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  background-color: #f9fafb;
+}
+
+.ql-container.ql-snow {
+  border: none !important;
+}
